@@ -1,0 +1,32 @@
+# Speaker Identification System - Dependencies
+
+# Core Deep Learning
+torch>=2.0.0
+torchaudio>=2.0.0
+
+# SpeechBrain toolkit for speaker recognition
+speechbrain>=1.0.0
+
+# Hugging Face transformers for SOTA WavLM models
+transformers>=4.30.0
+
+# Audio processing
+librosa>=0.10.0
+soundfile>=0.12.0
+pydub>=0.25.1
+
+# Scientific computing
+numpy>=1.24.0
+scipy>=1.10.0
+scikit-learn>=1.2.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Configuration & utilities
+pyyaml>=6.0
+tqdm>=4.65.0
+
+# Logging
+tensorboard>=2.13.0

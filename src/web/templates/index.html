@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speaker Diarization & Transcription Assistant</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Vanilla CSS link -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- WaveSurfer.js for beautiful audio wave visualization -->
+    <script src="https://unpkg.com/wavesurfer.js@7"></script>
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="app-container">
+        
+
+
+        <!-- Main Content Layout -->
+        <main class="app-main">
+            
+            <!-- Left Panel: Controls and Upload -->
+            <section class="left-panel">
+                <div class="card glass-card upload-card">
+                    <h2 class="section-title"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Audio File</h2>
+                    <p class="section-desc">Select or drag and drop a multi-speaker audio file (WAV format recommended) to segment, identify, and transcribe the conversation.</p>
+                    
+                    <form id="upload-form">
+                        <div class="drag-drop-zone" id="drop-zone">
+                            <input type="file" id="audio-input" name="audio" accept=".wav,.flac,.mp3">
+                            <div class="drop-zone-content">
+                                <i class="fa-solid fa-music wave-music-icon"></i>
+                                <p class="drop-zone-prompt">Drag & drop your audio here or <span>browse files</span></p>
+                                <p class="file-limits">Supports WAV, FLAC, and MP3 (Max 10MB)</p>
+                            </div>
+                            <div class="selected-file-details" id="file-details">
+                                <i class="fa-solid fa-file-audio"></i>
+                                <span class="file-name" id="selected-file-name">filename.wav</span>
+                                <span class="file-size" id="selected-file-size">1.2 MB</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="num-speakers"><i class="fa-solid fa-users"></i> Number of Speakers</label>
+                            <select id="num-speakers" name="num_speakers" class="glass-select">
+                                <option value="auto">(Auto-Detect Speakers)</option>
+                                <option value="2">2 Speakers</option>
+                                <option value="3">3 Speakers</option>
+                                <option value="4">4 Speakers</option>
+                            </select>
+                        </div>
+
+                        <div class="settings-group">
+                            <label for="model-type"><i class="fa-solid fa-brain"></i> Model Selection</label>
+                            <select id="model-type" name="model_type" class="glass-select">
+                                <option value="pretrained_ecapa" selected>Pretrained ECAPA-TDNN (SpeechBrain)</option>
+                                <option value="pretrained_resnet">Pretrained ResNet-34 (SpeechBrain)</option>
+                                <option value="pretrained_wavlm">Pretrained WavLM (Microsoft - SOTA)</option>
+                                <option value="custom">Custom Trained Model</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="submit-btn">
+                            <span class="btn-text">Process Audio</span>
+                            <span class="btn-icon"><i class="fa-solid fa-circle-play"></i></span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Model Info Card -->
+                <div class="card glass-card info-card">
+                    <h3 class="card-subtitle"><i class="fa-solid fa-microchip"></i> System Architecture</h3>
+                    <div class="architecture-flow">
+                        <div class="flow-step">
+                            <span class="step-num">1</span>
+                            <div class="step-info">
+                                <strong>VAD Segmentation</strong>
+                                <span>Splits speech into active turns</span>
+                            </div>
+                        </div>
+                        <div class="flow-step">
+                            <span class="step-num">2</span>
+                            <div class="step-info">
+                                <strong>ECAPA-TDNN Embedding</strong>
+                                <span>Extracts 192-dim voice vector</span>
+                            </div>
+                        </div>
+                        <div class="flow-step">
+                            <span class="step-num">3</span>
+                            <div class="step-info">
+                                <strong>Agglomerative Clustering</strong>
+                                <span>Groups vectors by speaker identity</span>
+                            </div>
+                        </div>
+                        <div class="flow-step">
+                            <span class="step-num">4</span>
+                            <div class="step-info">
+                                <strong>Speech Recognition</strong>
+                                <span>Transcribes conversational segments</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Results & Timeline -->
+            <section class="right-panel">
+                
+                <!-- Welcome/Placeholder State -->
+                <div class="welcome-state card glass-card" id="welcome-state">
+                    <div class="welcome-illustration">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                    <h2>No Audio Processed Yet</h2>
+                    <p>Upload a multi-speaker conversation audio file on the left and click "Process Audio" to see the transcription timeline, speaker clustering results, and chat visualizer.</p>
+                </div>
+
+                <!-- Processing Loader State -->
+                <div class="loader-state card glass-card hidden" id="loader-state">
+                    <div class="ring-loader">
+                        <span></span>
+                    </div>
+                    <h2 id="loader-title">Voice Analysis Active</h2>
+                    <p id="loader-desc">VAD Segmentation: Splitting audio waveform...</p>
+                    <div class="pipeline-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="progress-bar-fill"></div>
+                        </div>
+                        <div class="progress-steps">
+                            <span class="prog-step active" id="prog-vad">VAD</span>
+                            <span class="prog-step" id="prog-embed">Embedding</span>
+                            <span class="prog-step" id="prog-cluster">Cluster</span>
+                            <span class="prog-step" id="prog-asr">ASR</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Display Area -->
+                <div class="results-state hidden" id="results-state">
+                    
+                    <!-- Audio Player & Wavesurfer Card -->
+                    <div class="card glass-card player-card">
+                        <div class="player-header">
+                            <div class="file-badge">
+                                <i class="fa-solid fa-file-waveform"></i> <span id="results-filename">filename.wav</span>
+                            </div>
+                            <div class="meta-badges">
+                                <span class="meta-badge"><i class="fa-solid fa-clock"></i> <span id="results-duration">0.00</span>s</span>
+                                <span class="meta-badge"><i class="fa-solid fa-user-gear"></i> <span id="results-speakers">0</span> Speakers</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Wavesurfer Waveform Container -->
+                        <div class="waveform-container">
+                            <div id="waveform"></div>
+                            <div class="timeline-ticks" id="waveform-timeline"></div>
+                        </div>
+
+                        <!-- Audio Controls -->
+                        <div class="audio-controls">
+                            <button class="control-btn" id="play-btn" title="Play/Pause"><i class="fa-solid fa-play"></i></button>
+                            <button class="control-btn" id="stop-btn" title="Stop"><i class="fa-solid fa-stop"></i></button>
+                            <span class="time-display"><span id="current-time">0:00</span> / <span id="total-time">0:00</span></span>
+                            <div class="volume-slider-container">
+                                <i class="fa-solid fa-volume-high"></i>
+                                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.8">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Speaker Timeline Ribbon -->
+                    <div class="card glass-card timeline-card">
+                        <h3 class="card-subtitle"><i class="fa-solid fa-chart-gantt"></i> Diarization Timeline</h3>
+                        <div class="speaker-legend" id="speaker-legend">
+                            <!-- Dynamically generated speaker colors legend -->
+                        </div>
+                        <div class="timeline-visual" id="timeline-ribbon">
+                            <!-- Dynamically filled speaker blocks -->
+                        </div>
+                    </div>
+
+                    <!-- Conversation / Chat List -->
+                    <div class="card glass-card chat-card">
+                        <div class="chat-header">
+                            <h3 class="card-subtitle"><i class="fa-solid fa-message"></i> Conversational Transcript</h3>
+                            <button class="btn btn-secondary btn-sm" id="export-btn" title="Export as Text"><i class="fa-solid fa-file-export"></i> Export</button>
+                        </div>
+                        <div class="chat-list" id="chat-list">
+                            <!-- Chat bubbles loaded dynamically -->
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+        
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 AuraDiarize Speaker Verification & Diarization System. All rights reserved.</p>
+        </footer>
+
+    </div>
+    
+    <!-- Vanilla JS App logic -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

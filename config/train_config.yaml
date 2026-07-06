@@ -1,0 +1,124 @@
+# Speaker Identification System - Training Configuration
+
+# =============================================
+# Dataset Configuration
+# =============================================
+dataset:
+  name: "dev_clean_2"                    # "voxceleb1", "voxceleb2", or "mini_dataset"
+  root_dir: "data/dev_clean_2"           # Root directory of the dataset
+  sample_rate: 16000                       # Target sample rate in Hz
+  max_duration: 3.0                        # Maximum audio duration in seconds
+  min_duration: 1.0                        # Minimum audio duration in seconds
+  train_split: 0.8                         # Training split ratio
+  val_split: 0.1                           # Validation split ratio
+  test_split: 0.1                          # Test split ratio
+
+# =============================================
+# Audio Preprocessing
+# =============================================
+preprocessing:
+  sample_rate: 16000
+  normalize: true
+  trim_silence: true
+  trim_db: 30                              # Silence threshold in dB
+
+# =============================================
+# Feature Extraction
+# =============================================
+features:
+  type: "mfcc"                             # "mfcc" or "mel_spectrogram"
+  n_mfcc: 40                               # Number of MFCC coefficients
+  n_mels: 80                               # Number of Mel filterbank channels
+  n_fft: 512                               # FFT size
+  win_length: 400                          # Window length (25ms at 16kHz)
+  hop_length: 160                          # Hop length (10ms at 16kHz)
+  f_min: 20                                # Minimum frequency
+  f_max: 7600                              # Maximum frequency
+
+# =============================================
+# Data Augmentation
+# =============================================
+augmentation:
+  enabled: true
+  noise:
+    enabled: true
+    snr_range: [5, 20]                     # Signal-to-noise ratio range in dB
+    types: ["white", "pink"]               # Noise types
+  speed_perturbation:
+    enabled: true
+    factors: [0.9, 0.95, 1.0, 1.05, 1.1]  # Speed perturbation factors
+  reverberation:
+    enabled: true
+    room_scale_range: [0, 50]              # Room scale range
+  spec_augment:
+    enabled: true
+    freq_mask_param: 10                    # Frequency masking parameter
+    time_mask_param: 20                    # Time masking parameter
+    num_freq_masks: 2                      # Number of frequency masks
+    num_time_masks: 2                      # Number of time masks
+
+# =============================================
+# Model Architecture
+# =============================================
+model:
+  name: "ecapa_tdnn"                       # Model architecture name
+  embedding_dim: 192                       # Speaker embedding dimension
+  channels: [512, 512, 512, 512, 1536]     # Channel sizes for TDNN layers
+  kernel_sizes: [5, 3, 3, 3, 1]           # Kernel sizes for TDNN layers
+  dilations: [1, 2, 3, 4, 1]              # Dilation factors
+  attention_channels: 128                  # Attention channels in pooling
+  res2net_scale: 8                         # Res2Net scale factor
+  se_channels: 128                         # Squeeze-Excitation channels
+  input_size: 40                           # Input feature size (n_mfcc or n_mels)
+
+# =============================================
+# Classification Head
+# =============================================
+classifier:
+  type: "arcface"                          # "arcface", "softmax", or "triplet"
+  arcface:
+    margin: 0.2                            # Angular margin
+    scale: 30.0                            # Feature scale
+
+# =============================================
+# Training Configuration
+# =============================================
+training:
+  epochs: 100                              # Number of training epochs
+  batch_size: 32                           # Batch size
+  learning_rate: 0.001                     # Initial learning rate
+  weight_decay: 0.0001                     # Weight decay (L2 regularization)
+  optimizer: "adam"                         # Optimizer: "adam", "sgd", "adamw"
+  scheduler:
+    type: "cosine"                         # LR scheduler: "cosine", "step", "plateau"
+    warmup_epochs: 5                       # Warmup epochs
+    min_lr: 0.000001                       # Minimum learning rate
+  gradient_clip: 5.0                       # Gradient clipping max norm
+  mixed_precision: true                    # Use automatic mixed precision
+  num_workers: 4                           # DataLoader workers
+  pin_memory: true                         # Pin memory for DataLoader
+  early_stopping:
+    enabled: true
+    patience: 10                           # Stop after N epochs without improvement
+    min_delta: 0.0001                      # Minimum change to qualify as an improvement
+    monitor: "val_eer"                     # Metric to monitor: "val_eer" or "val_loss"
+
+# =============================================
+# Checkpointing & Logging
+# =============================================
+checkpoint:
+  save_dir: "checkpoints"                  # Checkpoint save directory
+  save_every: 5                            # Save every N epochs
+  save_best: true                          # Save best model based on validation EER
+  resume: null                             # Path to resume checkpoint (null = start fresh)
+
+logging:
+  log_dir: "logs"                          # Log directory
+  log_every: 10                            # Log every N steps
+  tensorboard: true                        # Enable TensorBoard logging
+
+# =============================================
+# Hardware
+# =============================================
+device: "auto"                             # "auto", "cuda", "cpu"
+seed: 42                                   # Random seed for reproducibility

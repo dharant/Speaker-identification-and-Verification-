@@ -1,0 +1,22 @@
+Speaker Identification System - Evaluation Report
+============================================================
+
+Checkpoint: checkpoints/best_model.pt
+Device: cuda
+Test samples: 132
+Number of speakers: 26
+
+Identification Metrics:
+  Accuracy (Top-1): 100.00%
+  Accuracy (Top-5): 100.00%
+
+Verification Metrics:
+  EER: 0.0042 (0.42%)
+  EER Threshold: 0.6279
+  minDCF: 0.0788
+  ROC AUC: 0.9999
+
+Inference Latency:
+  Mean: 10.93 ms
+  Std: 1.62 ms
+  P95: 13.40 ms

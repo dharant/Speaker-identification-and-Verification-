@@ -1,0 +1,47 @@
+# Speaker Identification System - Inference Configuration
+
+# =============================================
+# Model Configuration
+# =============================================
+model:
+  checkpoint_path: "checkpoints/best_model.pt"   # Path to trained model checkpoint
+  embedding_dim: 192                               # Must match training config
+  name: "ecapa_tdnn"                               # Model architecture
+
+# =============================================
+# Preprocessing (must match training)
+# =============================================
+preprocessing:
+  sample_rate: 16000
+  normalize: true
+  trim_silence: true
+  trim_db: 30
+
+features:
+  type: "mfcc"
+  n_mfcc: 40
+  n_mels: 80
+  n_fft: 512
+  win_length: 400
+  hop_length: 160
+  f_min: 20
+  f_max: 7600
+
+# =============================================
+# Identification Settings
+# =============================================
+identification:
+  top_k: 5                                         # Return top-K predictions
+
+# =============================================
+# Verification Settings
+# =============================================
+verification:
+  threshold: 0.5                                   # Cosine similarity threshold
+  scoring_method: "cosine"                         # "cosine" or "plda"
+
+# =============================================
+# Hardware
+# =============================================
+device: "auto"                                     # "auto", "cuda", "cpu"
+batch_size: 1                                      # Batch size for inference
